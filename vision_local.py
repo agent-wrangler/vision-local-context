@@ -1247,6 +1247,90 @@ def _get_caption_backend_state() -> dict[str, bool]:
         }
 
 
+def _empty_analysis(
+    *,
+    summary: str,
+    ok: bool = False,
+    digest: str = "",
+    size: str = "",
+) -> dict:
+    return {
+        "ok": ok,
+        "caption": "",
+        "ocr_text": "",
+        "visible_text": "",
+        "summary": summary,
+        "scene": "",
+        "chart_visual": {},
+        "chart_text": {},
+        "layout": {},
+        "digest": digest,
+        "size": size,
+        "caption_pending": False,
+    }
+
+
+def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
+    ocr_started_at = time.perf_counter()
+    ocr_payload = _run_windows_ocr(image, debug_write, include_layout=True)
+    if isinstance(ocr_payload, dict):
+        ocr_text = _normalize_text(ocr_payload.get("text", ""), limit=1600)
+        ocr_lines = _normalize_ocr_lines(image, ocr_payload.get("lines", []))
+    else:
+        ocr_text = _normalize_text(ocr_payload, limit=1600)
+        ocr_lines = []
+
+    ocr_retried = False
+    if _should_retry_ocr(image, ocr_text):
+        retry_image = _build_ocr_retry_image(image)
+        retry_payload = _run_windows_ocr(retry_image, debug_write, include_layout=True)
+        ocr_retried = True
+        if isinstance(retry_payload, dict):
+            retry_text = _normalize_text(retry_payload.get("text", ""), limit=1600)
+            retry_lines = _normalize_ocr_lines(
+                image,
+                retry_payload.get("lines", []),
+                source_size=(retry_image.width, retry_image.height),
+            )
+        else:
+            retry_text = _normalize_text(retry_payload, limit=1600)
+            retry_lines = []
+        if retry_lines:
+            ocr_lines = _merge_ocr_lines(ocr_lines, retry_lines)
+        if _ocr_signal_score(retry_text) > _ocr_signal_score(ocr_text):
+            ocr_text = retry_text
+
+    return {
+        "text": ocr_text,
+        "lines": ocr_lines,
+        "retried": ocr_retried,
+        "ms": round((time.perf_counter() - ocr_started_at) * 1000, 1),
+    }
+
+
+def _run_caption_analysis(image: Image.Image, ocr_text: str, debug_write: _DEBUG_WRITE) -> dict:
+    if not _should_attempt_caption(image, ocr_text):
+        return {
+            "caption": "",
+            "pending": False,
+            "ms": 0.0,
+        }
+
+    caption_started_at = time.perf_counter()
+    caption = _caption_image(
+        image,
+        debug_write,
+        prompt=_choose_caption_prompt(image, ocr_text),
+    )
+    caption_ms = round((time.perf_counter() - caption_started_at) * 1000, 1)
+    state = _get_caption_backend_state()
+    return {
+        "caption": caption,
+        "pending": not caption and state["loading"] and not state["error"],
+        "ms": caption_ms,
+    }
+
+
 def _run_windows_ocr(image: Image.Image, debug_write: _DEBUG_WRITE, *, include_layout: bool = False) -> str | dict:
     if os.name != "nt":
         return ""
@@ -1541,14 +1625,7 @@ def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) ->
     started_at = time.perf_counter()
     image, raw = _decode_image(image_b64)
     if image is None or not raw:
-        return {
-            "ok": False,
-            "caption": "",
-            "ocr_text": "",
-            "summary": "Unable to decode the uploaded image.",
-            "digest": "",
-            "size": "",
-        }
+        return _empty_analysis(summary="Unable to decode the uploaded image.")
 
     digest = hashlib.sha256(raw).hexdigest()
     cached = _cache_get(digest)
@@ -1558,52 +1635,17 @@ def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) ->
     if image.width >= 900 and image.height >= 500:
         _load_caption_backend(debug_write, blocking=False)
 
-    ocr_started_at = time.perf_counter()
-    ocr_payload = _run_windows_ocr(image, debug_write, include_layout=True)
-    if isinstance(ocr_payload, dict):
-        ocr_text = _normalize_text(ocr_payload.get("text", ""), limit=1600)
-        ocr_lines = _normalize_ocr_lines(image, ocr_payload.get("lines", []))
-    else:
-        ocr_text = _normalize_text(ocr_payload, limit=1600)
-        ocr_lines = []
-    ocr_retried = False
-    if _should_retry_ocr(image, ocr_text):
-        retry_image = _build_ocr_retry_image(image)
-        retry_payload = _run_windows_ocr(retry_image, debug_write, include_layout=True)
-        ocr_retried = True
-        if isinstance(retry_payload, dict):
-            retry_text = _normalize_text(retry_payload.get("text", ""), limit=1600)
-            retry_lines = _normalize_ocr_lines(
-                image,
-                retry_payload.get("lines", []),
-                source_size=(retry_image.width, retry_image.height),
-            )
-        else:
-            retry_text = _normalize_text(retry_payload, limit=1600)
-            retry_lines = []
-        if retry_lines:
-            ocr_lines = _merge_ocr_lines(ocr_lines, retry_lines)
-        if _ocr_signal_score(retry_text) > _ocr_signal_score(ocr_text):
-            ocr_text = retry_text
-    ocr_ms = round((time.perf_counter() - ocr_started_at) * 1000, 1)
+    ocr_result = _run_ocr_analysis(image, debug_write)
+    ocr_text = ocr_result["text"]
+    ocr_lines = ocr_result["lines"]
     chart_visual = _analyze_chart_visual_pattern(image)
     pre_scene = _detect_visual_scene(image, caption="", ocr_text=ocr_text, chart_visual=chart_visual)
     layout = _analyze_structured_layout(image, ocr_lines, ocr_text)
     chart_text = _extract_chart_text_structure(image, ocr_lines) if ocr_lines and pre_scene == "chart" else {}
 
-    caption = ""
-    caption_ms = 0.0
-    caption_pending = False
-    if _should_attempt_caption(image, ocr_text):
-        caption_started_at = time.perf_counter()
-        caption = _caption_image(
-            image,
-            debug_write,
-            prompt=_choose_caption_prompt(image, ocr_text),
-        )
-        caption_ms = round((time.perf_counter() - caption_started_at) * 1000, 1)
-        state = _get_caption_backend_state()
-        caption_pending = not caption and state["loading"] and not state["error"]
+    caption_result = _run_caption_analysis(image, ocr_text, debug_write)
+    caption = caption_result["caption"]
+    caption_pending = caption_result["pending"]
 
     size = f"{image.width}x{image.height}"
     scene = _detect_visual_scene(
@@ -1647,11 +1689,11 @@ def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) ->
         "vision_local_analysis_timing",
         {
             "elapsed_ms": round((time.perf_counter() - started_at) * 1000, 1),
-            "ocr_ms": ocr_ms,
-            "caption_ms": caption_ms,
+            "ocr_ms": ocr_result["ms"],
+            "caption_ms": caption_result["ms"],
             "has_ocr": bool(ocr_text),
             "has_caption": bool(caption),
-            "ocr_retried": ocr_retried,
+            "ocr_retried": ocr_result["retried"],
             "caption_pending": caption_pending,
             "size": size,
         },

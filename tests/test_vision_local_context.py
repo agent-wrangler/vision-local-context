@@ -130,6 +130,28 @@ class VisionLocalBridgeTests(unittest.TestCase):
             ],
         )
 
+    def test_analyze_image_decode_failure_returns_stable_shape(self):
+        with patch.object(vision_local_module, "_decode_image", return_value=(None, b"")):
+            result = vision_local_module.analyze_image("not-base64")
+
+        self.assertEqual(
+            result,
+            {
+                "ok": False,
+                "caption": "",
+                "ocr_text": "",
+                "visible_text": "",
+                "summary": "Unable to decode the uploaded image.",
+                "scene": "",
+                "chart_visual": {},
+                "chart_text": {},
+                "layout": {},
+                "digest": "",
+                "size": "",
+                "caption_pending": False,
+            },
+        )
+
     def test_has_windows_ocr_support_requires_windows_and_powershell(self):
         with patch.object(vision_local_module.os, "name", "nt"), patch.object(
             vision_local_module.shutil, "which", return_value="powershell"

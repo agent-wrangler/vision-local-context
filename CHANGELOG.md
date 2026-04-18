@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- stabilized the `analyze_image()` failure payload so callers always receive the same top-level fields
+- refactored the analysis pipeline helpers to keep OCR and caption flow easier to maintain
 - added README visual assets and a more polished GitHub landing layout
 - improved the GitHub-facing README structure with badges, clearer install paths, and a stronger project overview
 - added issue templates for bug reports and feature requests
