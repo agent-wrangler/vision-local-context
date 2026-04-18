@@ -116,6 +116,20 @@ def _chart_axis_lines():
 
 
 class VisionLocalBridgeTests(unittest.TestCase):
+    def test_public_api_exports_supported_entry_points(self):
+        self.assertEqual(
+            vision_local_module.__all__,
+            [
+                "analyze_image",
+                "build_screen_description",
+                "build_user_image_context",
+                "get_local_image_capabilities",
+                "has_caption_support",
+                "has_local_image_support",
+                "has_windows_ocr_support",
+            ],
+        )
+
     def test_has_windows_ocr_support_requires_windows_and_powershell(self):
         with patch.object(vision_local_module.os, "name", "nt"), patch.object(
             vision_local_module.shutil, "which", return_value="powershell"

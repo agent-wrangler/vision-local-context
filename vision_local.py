@@ -121,6 +121,16 @@ _COMMON_UI_CANONICALS = (
     "Chat",
 )
 
+__all__ = [
+    "analyze_image",
+    "build_screen_description",
+    "build_user_image_context",
+    "get_local_image_capabilities",
+    "has_caption_support",
+    "has_local_image_support",
+    "has_windows_ocr_support",
+]
+
 
 def _noop_debug(_stage: str, _data: dict) -> None:
     return None

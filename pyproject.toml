@@ -10,8 +10,21 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
+keywords = ["ocr", "vision", "screenshots", "ui-analysis", "llm", "image-understanding"]
 authors = [
   { name = "Vision Local Context contributors" }
+]
+urls = { Homepage = "https://github.com/agent-wrangler/vision-local-context", Repository = "https://github.com/agent-wrangler/vision-local-context", Issues = "https://github.com/agent-wrangler/vision-local-context/issues" }
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Image Recognition",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
   "Pillow>=10.0",
@@ -24,6 +37,10 @@ caption = [
   "torch>=2.1",
 ]
 test = [
+  "pytest>=8.0",
+]
+dev = [
+  "build>=1.2",
   "pytest>=8.0",
 ]
 

@@ -81,6 +81,14 @@ pip install -e .[test]
 pytest -q
 ```
 
+For local development and release checks:
+
+```bash
+pip install -e .[dev]
+python -m pytest
+python -m build
+```
+
 ## Quick Start
 
 ```python
@@ -104,6 +112,7 @@ print(context)
 - OCR currently uses Windows OCR through PowerShell and Windows Runtime APIs.
 - Optional caption generation uses BLIP through `transformers` and `torch`.
 - The module still works without caption support, but visual summaries may rely more heavily on OCR and layout inference.
+- Full OCR analysis is Windows-focused today, but the package can still be imported and tested on non-Windows platforms.
 
 ## Configuration
 
@@ -123,6 +132,15 @@ This is an early extracted standalone version of the local vision-context layer.
 - `vision_local.py`: main module
 - `tests/test_vision_local_context.py`: copied regression tests for the standalone module
 - `CHANGELOG.md`: release notes for standalone extraction milestones
+
+## Development
+
+1. Create a virtual environment with Python 3.10+.
+2. Install editable dependencies with `pip install -e .[dev]`.
+3. Run `python -m pytest` before opening a pull request.
+4. Run `python -m build` before tagging a release.
+
+GitHub Actions runs the test suite on Windows and Linux and performs a packaging check on every push and pull request.
 
 ## License
 
