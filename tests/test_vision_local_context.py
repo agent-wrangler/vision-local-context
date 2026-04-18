@@ -149,6 +149,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
                 "layout": {},
                 "digest": "",
                 "size": "",
+                "ocr_backend": "",
                 "caption_pending": False,
             },
         )
@@ -221,8 +222,8 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
-            return_value="Settings Network Bluetooth Display Battery Privacy Power mode Screen brightness",
+            "_run_local_ocr_with_backend",
+            return_value=("Settings Network Bluetooth Display Battery Privacy Power mode Screen brightness", "windows"),
         ), patch.object(
             vision_local_module, "_caption_image", return_value="caption"
         ) as caption_mock:
@@ -243,10 +244,10 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
+            "_run_local_ocr_with_backend",
             side_effect=[
-                "Netmrk glueb:oth Display mo",
-                "Settings Network Bluetooth Display Battery Privacy Battery Power mode Screen brightness",
+                ("Netmrk glueb:oth Display mo", "windows"),
+                ("Settings Network Bluetooth Display Battery Privacy Battery Power mode Screen brightness", "windows"),
             ],
         ) as ocr_mock, patch.object(
             vision_local_module,
@@ -274,8 +275,8 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
-            return_value="Settings Battery Power mode Screen brightness",
+            "_run_local_ocr_with_backend",
+            return_value=("Settings Battery Power mode Screen brightness", "windows"),
         ), patch.object(
             vision_local_module,
             "_build_ocr_retry_image",
@@ -304,8 +305,8 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
-            return_value="Revenue Dashboard Q1 Q2 Q3 Q4 80k 60k 40k 20k Growth +18%",
+            "_run_local_ocr_with_backend",
+            return_value=("Revenue Dashboard Q1 Q2 Q3 Q4 80k 60k 40k 20k Growth +18%", "windows"),
         ), patch.object(
             vision_local_module,
             "_build_ocr_retry_image",
@@ -508,8 +509,8 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
-            return_value=ocr_payload,
+            "_run_local_ocr_with_backend",
+            return_value=(ocr_payload, "windows"),
         ), patch.object(
             vision_local_module,
             "_should_retry_ocr",
@@ -540,8 +541,8 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_local_ocr",
-            return_value="Settings Battery Power mode",
+            "_run_local_ocr_with_backend",
+            return_value=("Settings Battery Power mode", "windows"),
         ), patch.object(
             vision_local_module,
             "_build_ocr_retry_image",
@@ -766,6 +767,51 @@ class VisionLocalBridgeTests(unittest.TestCase):
         windows_mock.assert_not_called()
         tesseract_mock.assert_called_once()
         self.assertEqual(result, "hello")
+
+    def test_run_local_ocr_with_backend_reports_backend_name(self):
+        with patch.object(vision_local_module, "has_windows_ocr_support", return_value=False), patch.object(
+            vision_local_module, "has_tesseract_ocr_support", return_value=True
+        ), patch.object(
+            vision_local_module, "_run_tesseract_ocr", return_value="hello"
+        ):
+            payload, backend = vision_local_module._run_local_ocr_with_backend(_FakeImage(), lambda *_args: None)
+
+        self.assertEqual(payload, "hello")
+        self.assertEqual(backend, "tesseract")
+
+    def test_analyze_image_records_ocr_backend_used(self):
+        with patch.object(vision_local_module, "_decode_image", return_value=(_FakeImage(), b"raw")), patch.object(
+            vision_local_module, "_cache_get", return_value=None
+        ), patch.object(vision_local_module, "_cache_put"), patch.object(
+            vision_local_module,
+            "_load_caption_backend",
+            return_value=None,
+        ), patch.object(
+            vision_local_module,
+            "_run_local_ocr_with_backend",
+            return_value=(
+                {
+                    "text": "Example Login Email Password Sign in",
+                    "lines": _browser_layout_lines(),
+                },
+                "tesseract",
+            ),
+        ), patch.object(
+            vision_local_module,
+            "_should_retry_ocr",
+            return_value=False,
+        ), patch.object(
+            vision_local_module,
+            "_should_attempt_caption",
+            return_value=False,
+        ), patch.object(
+            vision_local_module,
+            "_analyze_chart_visual_pattern",
+            return_value={},
+        ):
+            result = vision_local_module.analyze_image("abc123", debug_write=lambda *_args: None)
+
+        self.assertEqual(result["ocr_backend"], "tesseract")
 
 
 if __name__ == "__main__":

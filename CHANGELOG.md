@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- exposed the OCR backend used in `analyze_image()` results and analysis timing debug output
+- added a GitHub Actions OCR integration job that installs Tesseract and runs real fallback-path tests
 - added an OCR backend abstraction with Tesseract CLI fallback for non-Windows environments
 - exposed Tesseract OCR capability probes and configuration knobs for backend selection, language choice, and page segmentation mode
 - added golden regression coverage for mixed-language browser and chat screens, low-resolution chat layouts, and downward-trend chart cases

@@ -74,6 +74,7 @@ The module also exposes capability probes:
 ```python
 {
     "ok": True,
+    "ocr_backend": "windows",
     "scene": "browser",
     "summary": "This appears to be a browser or website page.",
     "visible_text": "https://example.com/login Example Login Email Password Sign in",
@@ -88,6 +89,7 @@ The module also exposes capability probes:
 
 Typical fields include:
 
+- OCR backend used, such as `windows` or `tesseract`
 - scene type such as `browser`, `chat`, `chart`, `settings`, or `document`
 - cleaned visible text
 - layout details like address bar, page title, sidebar labels, and input hint
@@ -191,6 +193,7 @@ Near-term priorities:
 4. Run `python -m build` before tagging a release.
 
 GitHub Actions runs the test suite on Windows and Linux and performs a packaging check on every push and pull request.
+It also includes a dedicated Ubuntu OCR integration job that installs Tesseract and exercises the fallback backend against a real generated fixture.
 
 ## Contributing
 

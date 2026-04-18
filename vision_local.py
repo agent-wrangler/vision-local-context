@@ -1357,13 +1357,37 @@ def _empty_analysis(
         "layout": {},
         "digest": digest,
         "size": size,
+        "ocr_backend": "",
         "caption_pending": False,
     }
 
 
+def _run_local_ocr_with_backend(
+    image: Image.Image,
+    debug_write: _DEBUG_WRITE,
+    *,
+    include_layout: bool = False,
+) -> tuple[str | dict, str]:
+    preference = _ocr_backend_preference()
+    backends: list[str]
+    if preference == "windows":
+        backends = ["windows"]
+    elif preference == "tesseract":
+        backends = ["tesseract"]
+    else:
+        backends = ["windows", "tesseract"]
+
+    for backend in backends:
+        if backend == "windows" and has_windows_ocr_support():
+            return _run_windows_ocr(image, debug_write, include_layout=include_layout), "windows"
+        if backend == "tesseract" and has_tesseract_ocr_support():
+            return _run_tesseract_ocr(image, debug_write, include_layout=include_layout), "tesseract"
+    return _empty_ocr_result(include_layout=include_layout), ""
+
+
 def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
     ocr_started_at = time.perf_counter()
-    ocr_payload = _run_local_ocr(image, debug_write, include_layout=True)
+    ocr_payload, ocr_backend = _run_local_ocr_with_backend(image, debug_write, include_layout=True)
     if isinstance(ocr_payload, dict):
         ocr_text = _normalize_text(ocr_payload.get("text", ""), limit=1600)
         ocr_lines = _normalize_ocr_lines(image, ocr_payload.get("lines", []))
@@ -1374,7 +1398,7 @@ def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
     ocr_retried = False
     if _should_retry_ocr(image, ocr_text):
         retry_image = _build_ocr_retry_image(image)
-        retry_payload = _run_local_ocr(retry_image, debug_write, include_layout=True)
+        retry_payload, retry_backend = _run_local_ocr_with_backend(retry_image, debug_write, include_layout=True)
         ocr_retried = True
         if isinstance(retry_payload, dict):
             retry_text = _normalize_text(retry_payload.get("text", ""), limit=1600)
@@ -1386,6 +1410,8 @@ def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
         else:
             retry_text = _normalize_text(retry_payload, limit=1600)
             retry_lines = []
+        if retry_backend:
+            ocr_backend = retry_backend
         if retry_lines:
             ocr_lines = _merge_ocr_lines(ocr_lines, retry_lines)
         if _ocr_signal_score(retry_text) > _ocr_signal_score(ocr_text):
@@ -1395,6 +1421,7 @@ def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
         "text": ocr_text,
         "lines": ocr_lines,
         "retried": ocr_retried,
+        "backend": ocr_backend,
         "ms": round((time.perf_counter() - ocr_started_at) * 1000, 1),
     }
 
@@ -1556,21 +1583,8 @@ def _run_tesseract_ocr(image: Image.Image, debug_write: _DEBUG_WRITE, *, include
 
 
 def _run_local_ocr(image: Image.Image, debug_write: _DEBUG_WRITE, *, include_layout: bool = False) -> str | dict:
-    preference = _ocr_backend_preference()
-    backends: list[str]
-    if preference == "windows":
-        backends = ["windows"]
-    elif preference == "tesseract":
-        backends = ["tesseract"]
-    else:
-        backends = ["windows", "tesseract"]
-
-    for backend in backends:
-        if backend == "windows" and has_windows_ocr_support():
-            return _run_windows_ocr(image, debug_write, include_layout=include_layout)
-        if backend == "tesseract" and has_tesseract_ocr_support():
-            return _run_tesseract_ocr(image, debug_write, include_layout=include_layout)
-    return _empty_ocr_result(include_layout=include_layout)
+    payload, _backend = _run_local_ocr_with_backend(image, debug_write, include_layout=include_layout)
+    return payload
 
 
 def _run_windows_ocr(image: Image.Image, debug_write: _DEBUG_WRITE, *, include_layout: bool = False) -> str | dict:
@@ -1929,6 +1943,7 @@ def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) ->
         "layout": dict(layout) if layout else {},
         "digest": digest,
         "size": size,
+        "ocr_backend": ocr_result["backend"],
         "caption_pending": caption_pending,
     }
     if not caption_pending:
@@ -1941,6 +1956,7 @@ def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) ->
             "caption_ms": caption_result["ms"],
             "has_ocr": bool(ocr_text),
             "has_caption": bool(caption),
+            "ocr_backend": ocr_result["backend"],
             "ocr_retried": ocr_result["retried"],
             "caption_pending": caption_pending,
             "size": size,
