@@ -26,6 +26,8 @@
 
 `vision-local-context` sits in the practical middle layer between raw screenshots and a chat model. It is built for workflows where you do not want to make a multimodal API call for every image turn, but you still want useful local understanding of browser pages, chat windows, settings screens, dashboards, and documents.
 
+Windows OCR remains the strongest local path, and the package now supports a Tesseract-based OCR fallback for macOS and Linux environments where the `tesseract` CLI is installed.
+
 ## At a Glance
 
 | Input | Understands | Returns |
@@ -60,6 +62,7 @@
 The module also exposes capability probes:
 
 - `has_windows_ocr_support()`
+- `has_tesseract_ocr_support()`
 - `has_caption_support()`
 - `get_local_image_capabilities()`
 - `has_local_image_support()`
@@ -146,15 +149,19 @@ print(context)
 ## Platform Notes
 
 - OCR currently uses Windows OCR through PowerShell and Windows Runtime APIs.
+- When Windows OCR is unavailable, the package can fall back to the `tesseract` command-line OCR engine if it is installed.
 - Optional caption generation uses BLIP through `transformers` and `torch`.
-- The package can still be imported and tested on non-Windows platforms.
-- Full OCR-driven analysis is Windows-focused today.
+- The package can be imported, tested, and OCR-enabled on non-Windows platforms when Tesseract is available.
+- Windows remains the preferred OCR backend when both backends are present.
 
 ## Configuration
 
 Optional environment variables:
 
 - `VISION_LOCAL_CONTEXT_OCR_TIMEOUT_SECONDS`
+- `VISION_LOCAL_CONTEXT_OCR_BACKEND`
+- `VISION_LOCAL_CONTEXT_TESSERACT_LANG`
+- `VISION_LOCAL_CONTEXT_TESSERACT_PSM`
 - `VISION_LOCAL_CONTEXT_CAPTION_BLOCKING`
 - `VISION_LOCAL_CONTEXT_CAPTION_ALLOW_DOWNLOAD`
 - `VISION_LOCAL_CONTEXT_CAPTION_MODEL`

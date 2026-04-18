@@ -50,7 +50,7 @@ class VisionLocalGoldenRegressionTests(unittest.TestCase):
             stack.enter_context(patch.object(vision_local_module, "_cache_get", return_value=None))
             stack.enter_context(patch.object(vision_local_module, "_cache_put"))
             stack.enter_context(patch.object(vision_local_module, "_load_caption_backend", return_value=None))
-            stack.enter_context(patch.object(vision_local_module, "_run_windows_ocr", return_value=ocr_payload))
+            stack.enter_context(patch.object(vision_local_module, "_run_local_ocr", return_value=ocr_payload))
             stack.enter_context(patch.object(vision_local_module, "_should_retry_ocr", return_value=False))
             stack.enter_context(
                 patch.object(

@@ -18,7 +18,7 @@ urls = { Homepage = "https://github.com/agent-wrangler/vision-local-context", Re
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "Operating System :: Microsoft :: Windows",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",

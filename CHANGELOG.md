@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- added an OCR backend abstraction with Tesseract CLI fallback for non-Windows environments
+- exposed Tesseract OCR capability probes and configuration knobs for backend selection, language choice, and page segmentation mode
 - added golden regression coverage for mixed-language browser and chat screens, low-resolution chat layouts, and downward-trend chart cases
 - broadened browser, chat, chart, and settings keyword handling for mixed Chinese-English screenshots
 - stabilized the `analyze_image()` failure payload so callers always receive the same top-level fields

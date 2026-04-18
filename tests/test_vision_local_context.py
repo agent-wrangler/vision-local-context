@@ -126,6 +126,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
                 "get_local_image_capabilities",
                 "has_caption_support",
                 "has_local_image_support",
+                "has_tesseract_ocr_support",
                 "has_windows_ocr_support",
             ],
         )
@@ -167,17 +168,26 @@ class VisionLocalBridgeTests(unittest.TestCase):
         with patch.dict(sys.modules, {"transformers": object(), "torch": object()}):
             self.assertTrue(vision_local_module.has_caption_support())
 
-    def test_has_local_image_support_is_conservative_full_analysis_probe(self):
+    def test_has_tesseract_ocr_support_checks_binary_presence(self):
+        with patch.object(vision_local_module.shutil, "which", return_value="tesseract"):
+            self.assertTrue(vision_local_module.has_tesseract_ocr_support())
+        with patch.object(vision_local_module.shutil, "which", return_value=None):
+            self.assertFalse(vision_local_module.has_tesseract_ocr_support())
+
+    def test_has_local_image_support_accepts_tesseract_fallback(self):
         with patch.object(vision_local_module, "has_windows_ocr_support", return_value=False), patch.object(
+            vision_local_module, "has_tesseract_ocr_support", return_value=True
+        ), patch.object(
             vision_local_module, "has_caption_support", return_value=True
         ):
-            self.assertFalse(vision_local_module.has_local_image_support())
+            self.assertTrue(vision_local_module.has_local_image_support())
             self.assertEqual(
                 vision_local_module.get_local_image_capabilities(),
                 {
                     "windows_ocr": False,
+                    "tesseract_ocr": True,
                     "caption": True,
-                    "full_analysis": False,
+                    "full_analysis": True,
                     "any": True,
                 },
             )
@@ -187,12 +197,18 @@ class VisionLocalBridgeTests(unittest.TestCase):
             vision_local_module.os.environ,
             {
                 "VISION_LOCAL_CONTEXT_OCR_TIMEOUT_SECONDS": "11",
+                "VISION_LOCAL_CONTEXT_OCR_BACKEND": "tesseract",
+                "VISION_LOCAL_CONTEXT_TESSERACT_PSM": "12",
+                "VISION_LOCAL_CONTEXT_TESSERACT_LANG": "eng+chi_sim",
                 "VISION_LOCAL_CONTEXT_CAPTION_BLOCKING": "1",
                 "VISION_LOCAL_CONTEXT_CAPTION_ALLOW_DOWNLOAD": "true",
             },
             clear=True,
         ):
             self.assertEqual(vision_local_module._ocr_timeout_seconds(), 11)
+            self.assertEqual(vision_local_module._ocr_backend_preference(), "tesseract")
+            self.assertEqual(vision_local_module._tesseract_psm(), 12)
+            self.assertEqual(vision_local_module._tesseract_lang(), "eng+chi_sim")
             self.assertTrue(vision_local_module._caption_blocking_enabled())
             self.assertTrue(vision_local_module._caption_allow_download())
 
@@ -205,7 +221,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             return_value="Settings Network Bluetooth Display Battery Privacy Power mode Screen brightness",
         ), patch.object(
             vision_local_module, "_caption_image", return_value="caption"
@@ -227,7 +243,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             side_effect=[
                 "Netmrk glueb:oth Display mo",
                 "Settings Network Bluetooth Display Battery Privacy Battery Power mode Screen brightness",
@@ -258,7 +274,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             return_value="Settings Battery Power mode Screen brightness",
         ), patch.object(
             vision_local_module,
@@ -288,7 +304,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             return_value="Revenue Dashboard Q1 Q2 Q3 Q4 80k 60k 40k 20k Growth +18%",
         ), patch.object(
             vision_local_module,
@@ -492,7 +508,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             return_value=ocr_payload,
         ), patch.object(
             vision_local_module,
@@ -524,7 +540,7 @@ class VisionLocalBridgeTests(unittest.TestCase):
             return_value=None,
         ), patch.object(
             vision_local_module,
-            "_run_windows_ocr",
+            "_run_local_ocr",
             return_value="Settings Battery Power mode",
         ), patch.object(
             vision_local_module,
@@ -661,6 +677,95 @@ class VisionLocalBridgeTests(unittest.TestCase):
         self.assertEqual(result["text"], "Example Login Email Password")
         self.assertEqual(len(result["lines"]), 2)
         self.assertEqual(result["lines"][0]["text"], "Example Login")
+
+    def test_run_tesseract_ocr_include_layout_parses_tsv_payload(self):
+        tsv_payload = "\n".join(
+            [
+                "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext",
+                "4\t1\t1\t1\t1\t0\t220\t118\t220\t24\t-1\t",
+                "5\t1\t1\t1\t1\t1\t220\t118\t92\t24\t96.0\tExample",
+                "5\t1\t1\t1\t1\t2\t324\t118\t116\t24\t95.0\tLogin",
+                "4\t1\t1\t1\t2\t0\t230\t250\t80\t20\t-1\t",
+                "5\t1\t1\t1\t2\t1\t230\t250\t80\t20\t93.0\tEmail",
+            ]
+        )
+
+        def fake_run(_args, **_kwargs):
+            return SimpleNamespace(returncode=0, stdout=tsv_payload, stderr="")
+
+        with patch.object(
+            vision_local_module.shutil,
+            "which",
+            side_effect=lambda name: "tesseract" if name == "tesseract" else None,
+        ), patch.object(
+            vision_local_module.tempfile,
+            "NamedTemporaryFile",
+            return_value=_FakeTempFile(r"C:\tmp\ocr test.png"),
+        ), patch.object(
+            vision_local_module.subprocess, "run", side_effect=fake_run
+        ), patch.object(
+            vision_local_module.os, "remove"
+        ):
+            result = vision_local_module._run_tesseract_ocr(
+                _FakeImage(),
+                lambda *_args: None,
+                include_layout=True,
+            )
+
+        self.assertEqual(result["text"], "Example Login Email")
+        self.assertEqual(len(result["lines"]), 2)
+        self.assertEqual(result["lines"][0]["text"], "Example Login")
+        self.assertEqual(result["lines"][1]["text"], "Email")
+
+    def test_run_tesseract_ocr_honors_lang_and_psm_configuration(self):
+        captured = {}
+
+        def fake_run(args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return SimpleNamespace(returncode=0, stdout="hello", stderr="")
+
+        with patch.dict(
+            vision_local_module.os.environ,
+            {
+                "VISION_LOCAL_CONTEXT_TESSERACT_LANG": "eng+chi_sim",
+                "VISION_LOCAL_CONTEXT_TESSERACT_PSM": "12",
+            },
+            clear=False,
+        ), patch.object(
+            vision_local_module.shutil,
+            "which",
+            side_effect=lambda name: "tesseract" if name == "tesseract" else None,
+        ), patch.object(
+            vision_local_module.tempfile,
+            "NamedTemporaryFile",
+            return_value=_FakeTempFile(r"C:\tmp\ocr test.png"),
+        ), patch.object(
+            vision_local_module.subprocess, "run", side_effect=fake_run
+        ), patch.object(
+            vision_local_module.os, "remove"
+        ):
+            result = vision_local_module._run_tesseract_ocr(_FakeImage(), lambda *_args: None)
+
+        self.assertEqual(result, "hello")
+        self.assertEqual(
+            captured["args"],
+            ["tesseract", r"C:\tmp\ocr test.png", "-", "--psm", "12", "-l", "eng+chi_sim", "quiet"],
+        )
+
+    def test_run_local_ocr_uses_tesseract_when_windows_is_unavailable(self):
+        with patch.object(vision_local_module, "has_windows_ocr_support", return_value=False), patch.object(
+            vision_local_module, "has_tesseract_ocr_support", return_value=True
+        ), patch.object(
+            vision_local_module, "_run_tesseract_ocr", return_value="hello"
+        ) as tesseract_mock, patch.object(
+            vision_local_module, "_run_windows_ocr"
+        ) as windows_mock:
+            result = vision_local_module._run_local_ocr(_FakeImage(), lambda *_args: None)
+
+        windows_mock.assert_not_called()
+        tesseract_mock.assert_called_once()
+        self.assertEqual(result, "hello")
 
 
 if __name__ == "__main__":
