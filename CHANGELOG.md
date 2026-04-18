@@ -3,6 +3,7 @@
 ## Unreleased
 
 - split the project into internal `ocr`, `layout`, `summary`, `caption`, and `pipeline` modules behind a top-level compatibility facade
+- moved the caption runtime implementation and caption analysis flow into `vision_local_core/caption.py`
 - moved the OCR runtime implementation and OCR analysis flow into `vision_local_core/ocr.py` while keeping the top-level patching surface stable for tests
 - exposed the OCR backend used in `analyze_image()` results and analysis timing debug output
 - added a GitHub Actions OCR integration job that installs Tesseract and runs real fallback-path tests
