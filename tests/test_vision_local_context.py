@@ -2,6 +2,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from typing import get_type_hints
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -12,6 +13,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import vision_local as vision_local_module
+from vision_local_core import _legacy as legacy_module
+from vision_local_core.contracts import ImageAnalysisResult, LocalImageCapabilities
+from vision_local_core.layout import _repair_short_ui_text
 
 
 class _FakeImage:
@@ -153,6 +157,163 @@ class VisionLocalBridgeTests(unittest.TestCase):
                 "caption_pending": False,
             },
         )
+
+    def test_public_function_type_hints_expose_contract_types(self):
+        self.assertIs(get_type_hints(vision_local_module.analyze_image)["return"], ImageAnalysisResult)
+        self.assertIs(
+            get_type_hints(vision_local_module.get_local_image_capabilities)["return"],
+            LocalImageCapabilities,
+        )
+
+    def test_analyze_image_success_payload_has_stable_top_level_keys(self):
+        with patch.object(vision_local_module, "_decode_image", return_value=(_FakeImage(), b"raw")), patch.object(
+            vision_local_module, "_cache_get", return_value=None
+        ), patch.object(vision_local_module, "_cache_put"), patch.object(
+            vision_local_module,
+            "_load_caption_backend",
+            return_value=None,
+        ), patch.object(
+            vision_local_module,
+            "_run_local_ocr_with_backend",
+            return_value=("Settings Network Bluetooth Display Battery Privacy", "windows"),
+        ), patch.object(
+            vision_local_module, "_should_retry_ocr", return_value=False
+        ), patch.object(
+            vision_local_module, "_should_attempt_caption", return_value=False
+        ), patch.object(
+            vision_local_module, "_analyze_chart_visual_pattern", return_value={}
+        ):
+            result = vision_local_module.analyze_image("abc123", debug_write=lambda *_args: None)
+
+        self.assertEqual(
+            set(result.keys()),
+            {
+                "ok",
+                "caption",
+                "ocr_text",
+                "visible_text",
+                "summary",
+                "scene",
+                "chart_visual",
+                "chart_text",
+                "layout",
+                "digest",
+                "size",
+                "ocr_backend",
+                "caption_pending",
+            },
+        )
+        self.assertIsInstance(result["ok"], bool)
+        self.assertIsInstance(result["caption"], str)
+        self.assertIsInstance(result["ocr_text"], str)
+        self.assertIsInstance(result["visible_text"], str)
+        self.assertIsInstance(result["summary"], str)
+        self.assertIsInstance(result["scene"], str)
+        self.assertIsInstance(result["chart_visual"], dict)
+        self.assertIsInstance(result["chart_text"], dict)
+        self.assertIsInstance(result["layout"], dict)
+        self.assertIsInstance(result["digest"], str)
+        self.assertIsInstance(result["size"], str)
+        self.assertIsInstance(result["ocr_backend"], str)
+        self.assertIsInstance(result["caption_pending"], bool)
+
+    def test_get_local_image_capabilities_returns_stable_bool_flags(self):
+        with patch.object(vision_local_module, "has_windows_ocr_support", return_value=False), patch.object(
+            vision_local_module, "has_tesseract_ocr_support", return_value=True
+        ), patch.object(
+            vision_local_module, "has_caption_support", return_value=False
+        ):
+            result = vision_local_module.get_local_image_capabilities()
+
+        self.assertEqual(
+            set(result.keys()),
+            {"windows_ocr", "tesseract_ocr", "caption", "full_analysis", "any"},
+        )
+        self.assertTrue(all(isinstance(value, bool) for value in result.values()))
+        self.assertEqual(
+            result,
+            {
+                "windows_ocr": False,
+                "tesseract_ocr": True,
+                "caption": False,
+                "full_analysis": True,
+                "any": True,
+            },
+        )
+
+    def test_repair_short_ui_text_preserves_bilingual_labels(self):
+        self.assertEqual(_repair_short_ui_text("\u5bc6\u7801 / Password"), "\u5bc6\u7801 / Password")
+        self.assertEqual(_repair_short_ui_text("\u8f93\u5165\u6d88\u606f / Reply"), "\u8f93\u5165\u6d88\u606f / Reply")
+        self.assertEqual(_repair_short_ui_text("\u793a\u4f8b Login"), "\u793a\u4f8b Login")
+
+    def test_legacy_analyze_image_respects_patched_helpers(self):
+        with patch.object(legacy_module, "_decode_image", return_value=(_FakeImage(), b"raw")), patch.object(
+            legacy_module, "_cache_get", return_value=None
+        ), patch.object(legacy_module, "_cache_put"), patch.object(
+            legacy_module, "_load_caption_backend", return_value=None
+        ), patch.object(
+            legacy_module,
+            "_run_local_ocr_with_backend",
+            return_value=("Settings Network Bluetooth Display Battery Privacy", "windows"),
+        ), patch.object(
+            legacy_module,
+            "_should_retry_ocr",
+            return_value=False,
+        ), patch.object(
+            legacy_module,
+            "_should_attempt_caption",
+            return_value=False,
+        ), patch.object(
+            legacy_module,
+            "_analyze_chart_visual_pattern",
+            return_value={},
+        ):
+            result = legacy_module.analyze_image("abc123", debug_write=lambda *_args: None)
+
+        self.assertEqual(result["ocr_backend"], "windows")
+        self.assertEqual(result["scene"], "settings")
+        self.assertIn("Settings Network Bluetooth", result["ocr_text"])
+
+    def test_legacy_run_tesseract_ocr_uses_patched_runtime_dependencies(self):
+        captured = {}
+
+        def fake_run(args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return SimpleNamespace(returncode=0, stdout="hello", stderr="")
+
+        with patch.object(
+            legacy_module.shutil,
+            "which",
+            side_effect=lambda name: "tesseract" if name == "tesseract" else None,
+        ), patch.object(
+            legacy_module.tempfile,
+            "NamedTemporaryFile",
+            return_value=_FakeTempFile(r"C:\tmp\ocr test.png"),
+        ), patch.object(
+            legacy_module.subprocess, "run", side_effect=fake_run
+        ), patch.object(
+            legacy_module.os, "remove"
+        ):
+            result = legacy_module._run_tesseract_ocr(_FakeImage(), lambda *_args: None)
+
+        self.assertEqual(result, "hello")
+        self.assertEqual(captured["args"][-1], "quiet")
+
+    def test_legacy_caption_image_defers_backend_loading_by_default(self):
+        with patch.object(legacy_module, "_CAPTION_BACKEND", None), patch.object(
+            legacy_module, "_CAPTION_LOAD_ATTEMPTED", False
+        ), patch.object(
+            legacy_module, "_CAPTION_LOAD_ERROR", ""
+        ), patch.object(
+            legacy_module, "_CAPTION_LOADING", False
+        ), patch.object(
+            legacy_module, "_ensure_caption_backend_loading"
+        ) as ensure_mock:
+            result = legacy_module._caption_image(_FakeImage(), lambda *_args: None)
+
+        ensure_mock.assert_called_once()
+        self.assertEqual(result, "")
 
     def test_has_windows_ocr_support_requires_windows_and_powershell(self):
         with patch.object(vision_local_module.os, "name", "nt"), patch.object(

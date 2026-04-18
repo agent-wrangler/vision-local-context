@@ -186,8 +186,9 @@ Near-term priorities:
 - `vision_local_core/summary.py`: summary generation and caption-prompt helpers
 - `vision_local_core/caption.py`: caption backend loading and inference helpers
 - `vision_local_core/pipeline.py`: high-level analysis and prompt-context assembly
+- `vision_local_core/contracts.py`: TypedDict contracts for the public analysis and capability payloads
 - `vision_local_core/shared.py`: shared runtime state, keyword tables, and text-normalization helpers used across the active modules
-- `vision_local_core/_legacy.py`: shrinking compatibility layer kept for staged refactor safety and top-level patch compatibility
+- `vision_local_core/_legacy.py`: compatibility shell that re-exports the active modules for staged migration safety and top-level patch compatibility
 - `tests/test_vision_local_context.py`: regression tests for OCR cleanup, layout inference, and chart heuristics
 - `.github/workflows/ci.yml`: test and packaging checks for pushes and pull requests
 - `CHANGELOG.md`: release notes
@@ -200,7 +201,7 @@ Near-term priorities:
 4. Run `python -m build` before tagging a release.
 
 GitHub Actions runs the test suite on Windows and Linux and performs a packaging check on every push and pull request.
-It also includes a dedicated Ubuntu OCR integration job that installs Tesseract and exercises the fallback backend against a real generated fixture.
+It also includes a dedicated Ubuntu OCR integration job that installs Tesseract language packs and exercises the fallback backend against checked-in PNG fixtures.
 
 ## Contributing
 

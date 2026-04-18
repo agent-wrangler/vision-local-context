@@ -13,6 +13,7 @@ from collections import OrderedDict
 from PIL import Image, ImageFilter, ImageOps
 
 from . import caption as _caption
+from .contracts import LocalImageCapabilities, OCRAnalysisResult
 from . import layout as _layout
 from .shared import (
     _DEBUG_WRITE,
@@ -100,7 +101,7 @@ def _run_local_ocr_with_backend(
     return _empty_ocr_result(include_layout=include_layout), ""
 
 
-def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
+def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> OCRAnalysisResult:
     ocr_started_at = time.perf_counter()
     ocr_payload, ocr_backend = _run_local_ocr_with_backend(image, debug_write, include_layout=True)
     if isinstance(ocr_payload, dict):
@@ -442,7 +443,7 @@ def has_tesseract_ocr_support() -> bool:
     return bool(shutil.which("tesseract"))
 
 
-def get_local_image_capabilities() -> dict[str, bool]:
+def get_local_image_capabilities() -> LocalImageCapabilities:
     windows_ocr = has_windows_ocr_support()
     tesseract_ocr = has_tesseract_ocr_support()
     caption = _caption.has_caption_support()

@@ -8,6 +8,7 @@ import tempfile
 from vision_local_core import (
     _legacy,
     caption as _caption,
+    contracts as _contracts,
     layout as _layout,
     ocr as _ocr,
     pipeline as _pipeline,
@@ -49,7 +50,7 @@ _SYNC_EXCLUDED = {
     "_sync_legacy_globals",
 }
 
-_SYNC_TARGETS = (_legacy, _caption, _layout, _ocr, _pipeline, _shared, _summary)
+_SYNC_TARGETS = (_caption, _layout, _ocr, _pipeline, _shared, _summary)
 
 
 def _sync_legacy_globals(*, include_analyze: bool = False) -> None:
@@ -65,7 +66,9 @@ def _sync_legacy_globals(*, include_analyze: bool = False) -> None:
                 setattr(target, name, synced_value)
 
 
-def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> dict:
+def analyze_image(
+    image_b64: str, *, debug_write: _DEBUG_WRITE | None = None
+) -> _contracts.ImageAnalysisResult:
     _sync_legacy_globals()
     return _pipeline.analyze_image(image_b64, debug_write=debug_write)
 
@@ -110,7 +113,7 @@ def build_screen_description(image_b64: str, *, debug_write: _DEBUG_WRITE | None
     return _pipeline.build_screen_description(image_b64, debug_write=debug_write)
 
 
-def get_local_image_capabilities() -> dict[str, bool]:
+def get_local_image_capabilities() -> _contracts.LocalImageCapabilities:
     _sync_legacy_globals()
     return _ocr.get_local_image_capabilities()
 

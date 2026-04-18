@@ -133,6 +133,8 @@ def _repair_short_ui_text(text: str, *, allow_url: bool = False) -> str:
         return _repair_url_like_text(normalized)
     if len(normalized) > 80:
         return normalized
+    if re.search(r"[\u4e00-\u9fff]", normalized) and re.search(r"[A-Za-z]", normalized):
+        return normalized
     canonical = _match_common_ui_text(normalized)
     if canonical:
         return canonical

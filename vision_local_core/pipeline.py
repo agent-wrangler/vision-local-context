@@ -9,6 +9,7 @@ from PIL import Image
 
 from . import shared as _shared
 from .caption import _load_caption_backend, _run_caption_analysis
+from .contracts import ImageAnalysisResult
 from .layout import (
     _analyze_chart_visual_pattern,
     _analyze_structured_layout,
@@ -46,7 +47,7 @@ def _decode_image(image_b64: str) -> tuple[Image.Image | None, bytes]:
     return image, raw
 
 
-def _cache_get(digest: str) -> dict | None:
+def _cache_get(digest: str) -> ImageAnalysisResult | None:
     if not digest:
         return None
     with _shared._CACHE_LOCK:
@@ -57,7 +58,7 @@ def _cache_get(digest: str) -> dict | None:
         return dict(cached)
 
 
-def _cache_put(digest: str, analysis: dict) -> None:
+def _cache_put(digest: str, analysis: ImageAnalysisResult) -> None:
     if not digest:
         return
     with _shared._CACHE_LOCK:
@@ -73,7 +74,7 @@ def _empty_analysis(
     ok: bool = False,
     digest: str = "",
     size: str = "",
-) -> dict:
+) -> ImageAnalysisResult:
     return {
         "ok": ok,
         "caption": "",
@@ -91,7 +92,7 @@ def _empty_analysis(
     }
 
 
-def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> dict:
+def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> ImageAnalysisResult:
     debug_write = debug_write or _noop_debug
     started_at = time.perf_counter()
     image, raw = _decode_image(image_b64)

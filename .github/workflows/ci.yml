@@ -64,7 +64,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Tesseract
-        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-eng
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim fonts-noto-cjk
 
       - name: Install dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e .[test]

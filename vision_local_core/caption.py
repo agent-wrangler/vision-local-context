@@ -9,6 +9,7 @@ import time
 from PIL import Image
 
 from . import shared as _shared, summary as _summary
+from .contracts import CaptionAnalysisResult
 
 _DEBUG_WRITE = _shared._DEBUG_WRITE
 _env_flag = _shared._env_flag
@@ -32,7 +33,7 @@ def _get_caption_backend_state() -> dict[str, bool]:
         }
 
 
-def _run_caption_analysis(image: Image.Image, ocr_text: str, debug_write: _DEBUG_WRITE) -> dict:
+def _run_caption_analysis(image: Image.Image, ocr_text: str, debug_write: _DEBUG_WRITE) -> CaptionAnalysisResult:
     if not _summary._should_attempt_caption(image, ocr_text):
         return {
             "caption": "",
