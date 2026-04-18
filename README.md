@@ -180,7 +180,13 @@ Near-term priorities:
 
 ## Repository Layout
 
-- `vision_local.py`: main module
+- `vision_local.py`: top-level compatibility facade and public import surface
+- `vision_local_core/ocr.py`: OCR backend selection and platform-specific OCR helpers
+- `vision_local_core/layout.py`: layout extraction, chart parsing, and scene heuristics
+- `vision_local_core/summary.py`: summary generation and caption-prompt helpers
+- `vision_local_core/caption.py`: caption backend loading and inference helpers
+- `vision_local_core/pipeline.py`: high-level analysis and prompt-context assembly
+- `vision_local_core/_legacy.py`: staged compatibility layer while the refactor is still being moved inward
 - `tests/test_vision_local_context.py`: regression tests for OCR cleanup, layout inference, and chart heuristics
 - `.github/workflows/ci.yml`: test and packaging checks for pushes and pull requests
 - `CHANGELOG.md`: release notes

@@ -46,6 +46,7 @@ dev = [
 
 [tool.setuptools]
 py-modules = ["vision_local"]
+packages = ["vision_local_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

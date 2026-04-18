@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- split the project into internal `ocr`, `layout`, `summary`, `caption`, and `pipeline` modules behind a top-level compatibility facade
 - exposed the OCR backend used in `analyze_image()` results and analysis timing debug output
 - added a GitHub Actions OCR integration job that installs Tesseract and runs real fallback-path tests
 - added an OCR backend abstraction with Tesseract CLI fallback for non-Windows environments
