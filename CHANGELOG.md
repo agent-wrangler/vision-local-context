@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added README visual assets and a more polished GitHub landing layout
 - improved the GitHub-facing README structure with badges, clearer install paths, and a stronger project overview
 - added issue templates for bug reports and feature requests
 

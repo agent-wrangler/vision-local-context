@@ -1,12 +1,36 @@
 # Vision Local Context
 
-[![CI](https://img.shields.io/github/actions/workflow/status/agent-wrangler/vision-local-context/ci.yml?branch=main&label=CI)](https://github.com/agent-wrangler/vision-local-context/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/agent-wrangler/vision-local-context)](https://github.com/agent-wrangler/vision-local-context/blob/main/LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)](https://github.com/agent-wrangler/vision-local-context)
+<p align="center">
+  <img src="./assets/banner.svg" alt="Vision Local Context banner" width="100%">
+</p>
 
-Windows-first local screenshot understanding for OCR, UI layout extraction, and LLM-ready prompt context.
+<p align="center">
+  <a href="https://github.com/agent-wrangler/vision-local-context/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/agent-wrangler/vision-local-context/ci.yml?branch=main&label=CI" alt="CI">
+  </a>
+  <a href="https://github.com/agent-wrangler/vision-local-context/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/agent-wrangler/vision-local-context" alt="License">
+  </a>
+  <a href="https://github.com/agent-wrangler/vision-local-context">
+    <img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Windows-first local screenshot understanding for OCR, UI layout extraction, and LLM-ready prompt context.</strong>
+</p>
+
+<p align="center">
+  One screenshot in, structured context out.
+</p>
 
 `vision-local-context` sits in the practical middle layer between raw screenshots and a chat model. It is built for workflows where you do not want to make a multimodal API call for every image turn, but you still want useful local understanding of browser pages, chat windows, settings screens, dashboards, and documents.
+
+## At a Glance
+
+| Input | Understands | Returns |
+| --- | --- | --- |
+| screenshots, browser tabs, chats, dashboards, settings pages | OCR text, scene type, layout hints, chart cues | `summary`, `visible_text`, `layout`, and prompt-ready context |
 
 ## Why This Exists
 
@@ -15,6 +39,17 @@ Windows-first local screenshot understanding for OCR, UI layout extraction, and 
 - detect common screen types such as browser, chat, chart, settings, and document
 - extract browser-style and chat-style layout hints for downstream tools or agents
 - keep the integration surface small: one module, a few entry points, and plain Python dictionaries
+
+## How It Works
+
+<p align="center">
+  <img src="./assets/pipeline.svg" alt="Pipeline from screenshot to OCR cleanup to structure inference to LLM-ready output" width="100%">
+</p>
+
+1. Decode the uploaded image and run local OCR.
+2. Clean up noisy short labels and stabilize text fragments.
+3. Infer scene type, browser or chat layout hints, and basic chart structure.
+4. Return structured output that can drop straight into an LLM prompt or agent workflow.
 
 ## Core Entry Points
 

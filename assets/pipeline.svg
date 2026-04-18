@@ -1,0 +1,43 @@
+<svg width="1160" height="220" viewBox="0 0 1160 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1160" height="220" rx="20" fill="#F3F5F7"/>
+
+  <rect x="36" y="42" width="232" height="136" rx="16" fill="#FFFFFF"/>
+  <rect x="68" y="74" width="168" height="16" rx="6" fill="#D9E5EF"/>
+  <rect x="68" y="104" width="132" height="12" rx="6" fill="#E6EDF3"/>
+  <rect x="68" y="126" width="112" height="12" rx="6" fill="#E6EDF3"/>
+  <rect x="186" y="104" width="24" height="56" rx="6" fill="#E76F51"/>
+  <circle cx="88" cy="154" r="18" fill="#2BB7A8"/>
+  <text x="68" y="164" fill="#44515C" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">1. Screenshot in</text>
+
+  <path d="M292 110H362" stroke="#94A3AF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M350 96L378 110L350 124" stroke="#94A3AF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="392" y="42" width="232" height="136" rx="16" fill="#FFFFFF"/>
+  <rect x="426" y="76" width="126" height="14" rx="6" fill="#D9F0EB"/>
+  <rect x="426" y="104" width="142" height="10" rx="5" fill="#E9F6F3"/>
+  <rect x="426" y="124" width="96" height="10" rx="5" fill="#E9F6F3"/>
+  <rect x="426" y="146" width="154" height="10" rx="5" fill="#E9F6F3"/>
+  <text x="426" y="164" fill="#44515C" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">2. OCR + cleanup</text>
+
+  <path d="M648 110H718" stroke="#94A3AF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M706 96L734 110L706 124" stroke="#94A3AF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="748" y="42" width="232" height="136" rx="16" fill="#FFFFFF"/>
+  <rect x="782" y="76" width="98" height="14" rx="6" fill="#FCE2D6"/>
+  <rect x="782" y="106" width="84" height="40" rx="8" fill="#FFF3ED"/>
+  <rect x="878" y="106" width="78" height="40" rx="8" fill="#F1F6FA"/>
+  <text x="800" y="131" fill="#A64C31" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">scene</text>
+  <text x="896" y="131" fill="#546371" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700">layout</text>
+  <text x="782" y="164" fill="#44515C" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">3. Infer structure</text>
+
+  <path d="M1004 110H1074" stroke="#94A3AF" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1062 96L1090 110L1062 124" stroke="#94A3AF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <rect x="892" y="42" width="232" height="136" rx="16" fill="#FFFFFF" opacity="0"/>
+  <rect x="928" y="42" width="196" height="136" rx="16" fill="#1F2A33"/>
+  <text x="954" y="80" fill="#F6F7F8" font-family="Consolas, 'Courier New', monospace" font-size="14" font-weight="700">summary</text>
+  <text x="954" y="106" fill="#C6D0D8" font-family="Consolas, 'Courier New', monospace" font-size="14">visible_text</text>
+  <text x="954" y="132" fill="#C6D0D8" font-family="Consolas, 'Courier New', monospace" font-size="14">layout</text>
+  <text x="954" y="158" fill="#C6D0D8" font-family="Consolas, 'Courier New', monospace" font-size="14">prompt context</text>
+  <text x="954" y="198" fill="#F0B676" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">4. Return LLM-ready output</text>
+</svg>
