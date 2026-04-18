@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a bug in OCR, scene detection, layout extraction, or packaging.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the behavior you expected.
+      placeholder: The analyzer classified a browser screenshot as a chart...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Share the smallest reproducible example, screenshot type, or code snippet.
+      placeholder: |
+        1. Call analyze_image(...)
+        2. Use a screenshot containing ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include OS, Python version, and whether Windows OCR and caption support are available.
+      placeholder: Windows 11, Python 3.11, Windows OCR available, caption support disabled
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Extra context
+      description: Add logs, OCR text, screenshots, or anything else that helps.

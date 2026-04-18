@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- improved the GitHub-facing README structure with badges, clearer install paths, and a stronger project overview
+- added issue templates for bug reports and feature requests
+
 ## 0.1.0 - 2026-04-18
 
 Initial standalone extraction.
