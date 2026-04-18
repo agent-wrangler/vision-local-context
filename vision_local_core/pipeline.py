@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .ocr import _run_ocr_analysis
 from ._legacy import (
     _cache_get,
     _cache_put,
@@ -8,7 +9,6 @@ from ._legacy import (
     _noop_debug,
     _normalize_text,
     _run_caption_analysis,
-    _run_ocr_analysis,
     analyze_image,
     build_screen_description,
     build_user_image_context,

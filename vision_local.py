@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from vision_local_core import _legacy
+from vision_local_core import (
+    _legacy,
+    caption as _caption,
+    layout as _layout,
+    ocr as _ocr,
+    pipeline as _pipeline,
+    summary as _summary,
+)
 from vision_local_core.caption import *
 from vision_local_core.layout import *
 from vision_local_core.ocr import *
@@ -25,10 +32,19 @@ _SYNC_EXCLUDED = {
     "__all__",
     "_PUBLIC_API",
     "_SYNC_EXCLUDED",
+    "_SYNC_TARGETS",
     "_WRAPPER_PASSTHROUGH",
+    "_WRAPPER_ORIGINALS",
+    "_caption",
+    "_layout",
     "_legacy",
+    "_ocr",
+    "_pipeline",
+    "_summary",
     "_sync_legacy_globals",
 }
+
+_SYNC_TARGETS = (_legacy, _caption, _layout, _ocr, _pipeline, _summary)
 
 
 def _sync_legacy_globals(*, include_analyze: bool = False) -> None:
@@ -36,12 +52,12 @@ def _sync_legacy_globals(*, include_analyze: bool = False) -> None:
     for name, value in globals().items():
         if name in excluded or name.startswith("__"):
             continue
+        synced_value = value
         if name in _WRAPPER_PASSTHROUGH and value is _WRAPPER_PASSTHROUGH[name]:
-            if hasattr(_legacy, name):
-                setattr(_legacy, name, _WRAPPER_ORIGINALS[name])
-            continue
-        if hasattr(_legacy, name):
-            setattr(_legacy, name, value)
+            synced_value = _WRAPPER_ORIGINALS[name]
+        for target in _SYNC_TARGETS:
+            if hasattr(target, name):
+                setattr(target, name, synced_value)
 
 
 def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> dict:
@@ -56,7 +72,7 @@ def _run_local_ocr_with_backend(
     include_layout: bool = False,
 ):
     _sync_legacy_globals()
-    return _legacy._run_local_ocr_with_backend(image, debug_write, include_layout=include_layout)
+    return _ocr._run_local_ocr_with_backend(image, debug_write, include_layout=include_layout)
 
 
 def _run_local_ocr(
@@ -66,12 +82,12 @@ def _run_local_ocr(
     include_layout: bool = False,
 ):
     _sync_legacy_globals()
-    return _legacy._run_local_ocr(image, debug_write, include_layout=include_layout)
+    return _ocr._run_local_ocr(image, debug_write, include_layout=include_layout)
 
 
 def _caption_image(image, debug_write: _DEBUG_WRITE, *, prompt: str = "") -> str:
     _sync_legacy_globals()
-    return _legacy._caption_image(image, debug_write, prompt=prompt)
+    return _caption._caption_image(image, debug_write, prompt=prompt)
 
 
 def build_user_image_context(
@@ -91,12 +107,12 @@ def build_screen_description(image_b64: str, *, debug_write: _DEBUG_WRITE | None
 
 def get_local_image_capabilities() -> dict[str, bool]:
     _sync_legacy_globals()
-    return _legacy.get_local_image_capabilities()
+    return _ocr.get_local_image_capabilities()
 
 
 def has_local_image_support() -> bool:
     _sync_legacy_globals()
-    return _legacy.has_local_image_support()
+    return _ocr.has_local_image_support()
 
 
 _WRAPPER_PASSTHROUGH = {
@@ -112,11 +128,11 @@ _WRAPPER_PASSTHROUGH = {
 
 _WRAPPER_ORIGINALS = {
     "analyze_image": _legacy.analyze_image,
-    "_run_local_ocr_with_backend": _legacy._run_local_ocr_with_backend,
-    "_run_local_ocr": _legacy._run_local_ocr,
-    "_caption_image": _legacy._caption_image,
+    "_run_local_ocr_with_backend": _ocr._run_local_ocr_with_backend,
+    "_run_local_ocr": _ocr._run_local_ocr,
+    "_caption_image": _caption._caption_image,
     "build_user_image_context": _legacy.build_user_image_context,
     "build_screen_description": _legacy.build_screen_description,
-    "get_local_image_capabilities": _legacy.get_local_image_capabilities,
-    "has_local_image_support": _legacy.has_local_image_support,
+    "get_local_image_capabilities": _ocr.get_local_image_capabilities,
+    "has_local_image_support": _ocr.has_local_image_support,
 }
