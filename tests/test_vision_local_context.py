@@ -116,6 +116,50 @@ def _chart_axis_lines():
 
 
 class VisionLocalBridgeTests(unittest.TestCase):
+    def test_has_windows_ocr_support_requires_windows_and_powershell(self):
+        with patch.object(vision_local_module.os, "name", "nt"), patch.object(
+            vision_local_module.shutil, "which", return_value="powershell"
+        ):
+            self.assertTrue(vision_local_module.has_windows_ocr_support())
+
+        with patch.object(vision_local_module.os, "name", "posix"), patch.object(
+            vision_local_module.shutil, "which", return_value=None
+        ):
+            self.assertFalse(vision_local_module.has_windows_ocr_support())
+
+    def test_has_caption_support_checks_optional_caption_dependencies(self):
+        with patch.dict(sys.modules, {"transformers": object(), "torch": object()}):
+            self.assertTrue(vision_local_module.has_caption_support())
+
+    def test_has_local_image_support_is_conservative_full_analysis_probe(self):
+        with patch.object(vision_local_module, "has_windows_ocr_support", return_value=False), patch.object(
+            vision_local_module, "has_caption_support", return_value=True
+        ):
+            self.assertFalse(vision_local_module.has_local_image_support())
+            self.assertEqual(
+                vision_local_module.get_local_image_capabilities(),
+                {
+                    "windows_ocr": False,
+                    "caption": True,
+                    "full_analysis": False,
+                    "any": True,
+                },
+            )
+
+    def test_standalone_environment_variable_prefix_is_used(self):
+        with patch.dict(
+            vision_local_module.os.environ,
+            {
+                "VISION_LOCAL_CONTEXT_OCR_TIMEOUT_SECONDS": "11",
+                "VISION_LOCAL_CONTEXT_CAPTION_BLOCKING": "1",
+                "VISION_LOCAL_CONTEXT_CAPTION_ALLOW_DOWNLOAD": "true",
+            },
+            clear=True,
+        ):
+            self.assertEqual(vision_local_module._ocr_timeout_seconds(), 11)
+            self.assertTrue(vision_local_module._caption_blocking_enabled())
+            self.assertTrue(vision_local_module._caption_allow_download())
+
     def test_analyze_image_skips_caption_for_text_heavy_ocr(self):
         with patch.object(vision_local_module, "_decode_image", return_value=(_FakeImage(), b"raw")), patch.object(
             vision_local_module, "_cache_get", return_value=None

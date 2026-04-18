@@ -18,6 +18,15 @@ The current module provides:
 - text summaries that can be injected into an LLM prompt
 - prompt-ready context assembly for one or more uploaded images
 
+## Capability Probes
+
+The module exposes a few simple capability checks:
+
+- `has_windows_ocr_support()` for the full OCR and layout-extraction path
+- `has_caption_support()` for optional BLIP caption support
+- `get_local_image_capabilities()` for a combined view
+- `has_local_image_support()` as a conservative shortcut for the full OCR-driven path
+
 ## What It Returns
 
 The core entry points are:
@@ -95,6 +104,15 @@ print(context)
 - OCR currently uses Windows OCR through PowerShell and Windows Runtime APIs.
 - Optional caption generation uses BLIP through `transformers` and `torch`.
 - The module still works without caption support, but visual summaries may rely more heavily on OCR and layout inference.
+
+## Configuration
+
+Optional environment variables:
+
+- `VISION_LOCAL_CONTEXT_OCR_TIMEOUT_SECONDS`
+- `VISION_LOCAL_CONTEXT_CAPTION_BLOCKING`
+- `VISION_LOCAL_CONTEXT_CAPTION_ALLOW_DOWNLOAD`
+- `VISION_LOCAL_CONTEXT_CAPTION_MODEL`
 
 ## Status
 

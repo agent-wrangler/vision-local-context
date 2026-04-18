@@ -9,3 +9,5 @@ Initial standalone extraction.
 - included copied regression tests for OCR cleanup, structured layout inference, and chart heuristics
 - added standalone packaging metadata with `pyproject.toml`
 - added MIT license and repository-ready README
+- renamed standalone configuration to `VISION_LOCAL_CONTEXT_*`
+- added explicit capability probes for Windows OCR and optional caption support

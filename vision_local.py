@@ -156,15 +156,15 @@ def _env_int(name: str, default: int, *, minimum: int = 1, maximum: int | None =
 
 
 def _ocr_timeout_seconds() -> int:
-    return _env_int("AARONCORE_LOCAL_OCR_TIMEOUT_SECONDS", 8, minimum=3, maximum=20)
+    return _env_int("VISION_LOCAL_CONTEXT_OCR_TIMEOUT_SECONDS", 8, minimum=3, maximum=20)
 
 
 def _caption_blocking_enabled() -> bool:
-    return _env_flag("AARONCORE_LOCAL_CAPTION_BLOCKING", default=False)
+    return _env_flag("VISION_LOCAL_CONTEXT_CAPTION_BLOCKING", default=False)
 
 
 def _caption_allow_download() -> bool:
-    return _env_flag("AARONCORE_LOCAL_CAPTION_ALLOW_DOWNLOAD", default=False)
+    return _env_flag("VISION_LOCAL_CONTEXT_CAPTION_ALLOW_DOWNLOAD", default=False)
 
 
 def _decode_image(image_b64: str) -> tuple[Image.Image | None, bytes]:
@@ -1450,7 +1450,7 @@ def _load_caption_backend(debug_write: _DEBUG_WRITE, *, blocking: bool = False) 
         from transformers.utils import logging as transformers_logging
 
         model_id = (
-            os.environ.get("AARONCORE_LOCAL_CAPTION_MODEL")
+            os.environ.get("VISION_LOCAL_CONTEXT_CAPTION_MODEL")
             or "Salesforce/blip-image-captioning-base"
         ).strip()
         local_only = not _caption_allow_download()
@@ -1497,9 +1497,11 @@ def _caption_image(image: Image.Image, debug_write: _DEBUG_WRITE, *, prompt: str
         return ""
 
 
-def has_local_image_support() -> bool:
-    if os.name == "nt" and shutil.which("powershell"):
-        return True
+def has_windows_ocr_support() -> bool:
+    return os.name == "nt" and bool(shutil.which("powershell"))
+
+
+def has_caption_support() -> bool:
     try:
         import transformers  # noqa: F401
         import torch  # noqa: F401
@@ -1507,6 +1509,21 @@ def has_local_image_support() -> bool:
         return True
     except Exception:
         return False
+
+
+def get_local_image_capabilities() -> dict[str, bool]:
+    windows_ocr = has_windows_ocr_support()
+    caption = has_caption_support()
+    return {
+        "windows_ocr": windows_ocr,
+        "caption": caption,
+        "full_analysis": windows_ocr,
+        "any": windows_ocr or caption,
+    }
+
+
+def has_local_image_support() -> bool:
+    return has_windows_ocr_support()
 
 
 def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> dict:
