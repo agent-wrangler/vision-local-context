@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- added golden regression coverage for mixed-language browser and chat screens, low-resolution chat layouts, and downward-trend chart cases
+- broadened browser, chat, chart, and settings keyword handling for mixed Chinese-English screenshots
 - stabilized the `analyze_image()` failure payload so callers always receive the same top-level fields
 - refactored the analysis pipeline helpers to keep OCR and caption flow easier to maintain
 - added README visual assets and a more polished GitHub landing layout

@@ -47,25 +47,39 @@ _STOP_LABEL_WORDS = {
 _SETTINGS_KEYWORDS = {
     "setting",
     "settings",
+    "设置",
     "network",
+    "网络",
     "bluetooth",
+    "蓝牙",
     "display",
+    "显示",
     "battery",
+    "电池",
     "privacy",
+    "隐私",
     "wifi",
     "wi-fi",
     "brightness",
+    "亮度",
     "power mode",
     "volume",
+    "音量",
     "audio",
+    "声音",
 }
 _CHART_KEYWORDS = {
     "chart",
+    "图表",
     "graph",
     "dashboard",
+    "仪表盘",
     "trend",
+    "趋势",
     "sales",
     "revenue",
+    "营收",
+    "收入",
     "growth",
     "legend",
     "axis",
@@ -73,31 +87,86 @@ _CHART_KEYWORDS = {
 }
 _BROWSER_KEYWORDS = {
     "browser",
+    "浏览器",
     "chrome",
     "edge",
     "search",
+    "搜索",
     "tab",
     "login",
+    "登录",
+    "登入",
     "sign in",
     "website",
     "http",
     "www",
     "address bar",
+    "地址栏",
 }
 _CHAT_KEYWORDS = {
     "chat",
+    "聊天",
     "message",
     "messages",
+    "消息",
     "reply",
+    "回复",
     "assistant",
     "conversation",
+    "对话",
     "send",
+    "发送",
     "typing",
+    "输入",
     "wechat",
     "slack",
     "discord",
     "telegram",
 }
+_BROWSER_FIELD_TOKENS = (
+    "email",
+    "password",
+    "username",
+    "search",
+    "login",
+    "sign in",
+    "submit",
+    "邮箱",
+    "邮件",
+    "密码",
+    "用户名",
+    "搜索",
+    "登录",
+    "登入",
+    "提交",
+)
+_BROWSER_TITLE_EXCLUDE_TOKENS = (
+    "email",
+    "password",
+    "username",
+    "search",
+    "sign in",
+    "submit",
+    "邮箱",
+    "邮件",
+    "密码",
+    "用户名",
+    "搜索",
+    "提交",
+)
+_CHAT_INPUT_TOKENS = (
+    "send",
+    "type",
+    "message",
+    "reply",
+    "input",
+    "write",
+    "chat",
+    "发送",
+    "输入",
+    "消息",
+    "回复",
+)
 _COMMON_UI_CANONICALS = (
     "Example",
     "Login",
@@ -670,7 +739,7 @@ def _analyze_structured_layout(image: Image.Image, ocr_lines: list[dict], ocr_te
         and len(re.findall(r"[A-Za-z\u4e00-\u9fff]", line["text"])) >= 3
         and not any(
             token in line["text"].lower()
-            for token in ("email", "password", "username", "search", "sign in", "submit")
+            for token in _BROWSER_TITLE_EXCLUDE_TOKENS
         )
     ]
     field_candidates = [
@@ -678,7 +747,7 @@ def _analyze_structured_layout(image: Image.Image, ocr_lines: list[dict], ocr_te
         for line in body_lines
         if any(
             token in line["text"].lower()
-            for token in ("email", "password", "username", "search", "login", "sign in", "submit")
+            for token in _BROWSER_FIELD_TOKENS
         )
     ]
     if address_candidates or ("browser" in lowered_text and field_candidates):
@@ -688,7 +757,12 @@ def _analyze_structured_layout(image: Image.Image, ocr_lines: list[dict], ocr_te
             if browser_title_candidates
             else ""
         )
-        field_labels = _normalize_short_text_list([line["text"] for line in field_candidates[:4]], limit=4)
+        field_label_candidates = [
+            line
+            for line in field_candidates
+            if _normalize_text(line.get("text", ""), limit=120) != page_title
+        ]
+        field_labels = _normalize_short_text_list([line["text"] for line in field_label_candidates[:4]], limit=4)
         return {
             "kind": "browser",
             "address_bar": _repair_short_ui_text(address_text, allow_url=True),
@@ -715,7 +789,7 @@ def _analyze_structured_layout(image: Image.Image, ocr_lines: list[dict], ocr_te
         if line["width"] >= max(40, int(width * 0.05))
         and any(
             token in line["text"].lower()
-            for token in ("send", "type", "message", "reply", "input", "write", "chat")
+            for token in _CHAT_INPUT_TOKENS
         )
     ]
     sidebar_lines = [
@@ -1095,13 +1169,13 @@ def _join_human_list(items: list[str]) -> str:
 def _infer_settings_focus(labels: list[str], ocr_text: str) -> list[str]:
     lowered = _normalize_text(" ".join(labels + [ocr_text]), limit=1200).lower()
     focus: list[str] = []
-    if any(keyword in lowered for keyword in ("battery", "power", "brightness", "display", "screen")):
+    if any(keyword in lowered for keyword in ("battery", "power", "brightness", "display", "screen", "电池", "亮度", "显示", "屏幕")):
         focus.append("battery and display")
-    if any(keyword in lowered for keyword in ("network", "bluetooth", "wifi", "wi-fi")):
+    if any(keyword in lowered for keyword in ("network", "bluetooth", "wifi", "wi-fi", "网络", "蓝牙", "无线")):
         focus.append("connectivity")
-    if any(keyword in lowered for keyword in ("privacy", "security", "permission")):
+    if any(keyword in lowered for keyword in ("privacy", "security", "permission", "隐私", "权限", "安全")):
         focus.append("privacy")
-    if any(keyword in lowered for keyword in ("volume", "audio", "sound")):
+    if any(keyword in lowered for keyword in ("volume", "audio", "sound", "音量", "声音", "音频")):
         focus.append("audio")
     return focus[:3]
 
