@@ -3,6 +3,9 @@
 ## Unreleased
 
 - split the project into internal `ocr`, `layout`, `summary`, `caption`, and `pipeline` modules behind a top-level compatibility facade
+- moved the high-level analysis pipeline and prompt-context builders into `vision_local_core/pipeline.py`
+- moved layout parsing, scene detection, and chart heuristics into `vision_local_core/layout.py`
+- moved summary generation and caption-decision helpers into `vision_local_core/summary.py`
 - moved the caption runtime implementation and caption analysis flow into `vision_local_core/caption.py`
 - moved the OCR runtime implementation and OCR analysis flow into `vision_local_core/ocr.py` while keeping the top-level patching surface stable for tests
 - exposed the OCR backend used in `analyze_image()` results and analysis timing debug output

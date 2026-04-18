@@ -62,7 +62,7 @@ def _sync_legacy_globals(*, include_analyze: bool = False) -> None:
 
 def analyze_image(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> dict:
     _sync_legacy_globals()
-    return _legacy.analyze_image(image_b64, debug_write=debug_write)
+    return _pipeline.analyze_image(image_b64, debug_write=debug_write)
 
 
 def _run_local_ocr_with_backend(
@@ -97,12 +97,12 @@ def build_user_image_context(
     debug_write: _DEBUG_WRITE | None = None,
 ) -> str:
     _sync_legacy_globals(include_analyze=True)
-    return _legacy.build_user_image_context(images, user_text=user_text, debug_write=debug_write)
+    return _pipeline.build_user_image_context(images, user_text=user_text, debug_write=debug_write)
 
 
 def build_screen_description(image_b64: str, *, debug_write: _DEBUG_WRITE | None = None) -> str:
     _sync_legacy_globals(include_analyze=True)
-    return _legacy.build_screen_description(image_b64, debug_write=debug_write)
+    return _pipeline.build_screen_description(image_b64, debug_write=debug_write)
 
 
 def get_local_image_capabilities() -> dict[str, bool]:
@@ -127,12 +127,12 @@ _WRAPPER_PASSTHROUGH = {
 }
 
 _WRAPPER_ORIGINALS = {
-    "analyze_image": _legacy.analyze_image,
+    "analyze_image": _pipeline.analyze_image,
     "_run_local_ocr_with_backend": _ocr._run_local_ocr_with_backend,
     "_run_local_ocr": _ocr._run_local_ocr,
     "_caption_image": _caption._caption_image,
-    "build_user_image_context": _legacy.build_user_image_context,
-    "build_screen_description": _legacy.build_screen_description,
+    "build_user_image_context": _pipeline.build_user_image_context,
+    "build_screen_description": _pipeline.build_screen_description,
     "get_local_image_capabilities": _ocr.get_local_image_capabilities,
     "has_local_image_support": _ocr.has_local_image_support,
 }
