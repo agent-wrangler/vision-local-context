@@ -7,7 +7,7 @@ import time
 
 from PIL import Image
 
-from . import _legacy
+from . import shared as _shared
 from .caption import _load_caption_backend, _run_caption_analysis
 from .layout import (
     _analyze_chart_visual_pattern,
@@ -21,8 +21,8 @@ from .layout import (
 from .ocr import _run_ocr_analysis
 from .summary import _build_visual_summary
 
-_DEBUG_WRITE = _legacy._DEBUG_WRITE
-_normalize_text = _legacy._normalize_text
+_DEBUG_WRITE = _shared._DEBUG_WRITE
+_normalize_text = _shared._normalize_text
 
 
 def _noop_debug(_stage: str, _data: dict) -> None:
@@ -49,22 +49,22 @@ def _decode_image(image_b64: str) -> tuple[Image.Image | None, bytes]:
 def _cache_get(digest: str) -> dict | None:
     if not digest:
         return None
-    with _legacy._CACHE_LOCK:
-        cached = _legacy._ANALYSIS_CACHE.get(digest)
+    with _shared._CACHE_LOCK:
+        cached = _shared._ANALYSIS_CACHE.get(digest)
         if cached is None:
             return None
-        _legacy._ANALYSIS_CACHE.move_to_end(digest)
+        _shared._ANALYSIS_CACHE.move_to_end(digest)
         return dict(cached)
 
 
 def _cache_put(digest: str, analysis: dict) -> None:
     if not digest:
         return
-    with _legacy._CACHE_LOCK:
-        _legacy._ANALYSIS_CACHE[digest] = dict(analysis)
-        _legacy._ANALYSIS_CACHE.move_to_end(digest)
-        while len(_legacy._ANALYSIS_CACHE) > _legacy._CACHE_LIMIT:
-            _legacy._ANALYSIS_CACHE.popitem(last=False)
+    with _shared._CACHE_LOCK:
+        _shared._ANALYSIS_CACHE[digest] = dict(analysis)
+        _shared._ANALYSIS_CACHE.move_to_end(digest)
+        while len(_shared._ANALYSIS_CACHE) > _shared._CACHE_LIMIT:
+            _shared._ANALYSIS_CACHE.popitem(last=False)
 
 
 def _empty_analysis(

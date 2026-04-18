@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+import contextlib
+import io
+import os
+import threading
 import time
 
 from PIL import Image
 
-from . import _legacy, summary as _summary
+from . import shared as _shared, summary as _summary
 
-_DEBUG_WRITE = _legacy._DEBUG_WRITE
-_env_flag = _legacy._env_flag
-_normalize_text = _legacy._normalize_text
-contextlib = _legacy.contextlib
-io = _legacy.io
-os = _legacy.os
-threading = _legacy.threading
+_DEBUG_WRITE = _shared._DEBUG_WRITE
+_env_flag = _shared._env_flag
+_normalize_text = _shared._normalize_text
 
 
 def _caption_blocking_enabled() -> bool:
@@ -24,11 +24,11 @@ def _caption_allow_download() -> bool:
 
 
 def _get_caption_backend_state() -> dict[str, bool]:
-    with _legacy._CAPTION_LOCK:
+    with _shared._CAPTION_LOCK:
         return {
-            "ready": _legacy._CAPTION_BACKEND is not None,
-            "loading": _legacy._CAPTION_LOADING,
-            "error": bool(_legacy._CAPTION_LOAD_ERROR),
+            "ready": _shared._CAPTION_BACKEND is not None,
+            "loading": _shared._CAPTION_LOADING,
+            "error": bool(_shared._CAPTION_LOAD_ERROR),
         }
 
 
@@ -56,25 +56,25 @@ def _run_caption_analysis(image: Image.Image, ocr_text: str, debug_write: _DEBUG
 
 
 def _ensure_caption_backend_loading(debug_write: _DEBUG_WRITE) -> None:
-    if _legacy._CAPTION_BACKEND is not None:
+    if _shared._CAPTION_BACKEND is not None:
         return
-    if _legacy._CAPTION_LOAD_ATTEMPTED and _legacy._CAPTION_LOAD_ERROR:
+    if _shared._CAPTION_LOAD_ATTEMPTED and _shared._CAPTION_LOAD_ERROR:
         return
-    with _legacy._CAPTION_LOCK:
-        if _legacy._CAPTION_BACKEND is not None:
+    with _shared._CAPTION_LOCK:
+        if _shared._CAPTION_BACKEND is not None:
             return
-        if _legacy._CAPTION_LOAD_ATTEMPTED and _legacy._CAPTION_LOAD_ERROR:
+        if _shared._CAPTION_LOAD_ATTEMPTED and _shared._CAPTION_LOAD_ERROR:
             return
-        if _legacy._CAPTION_LOADING:
+        if _shared._CAPTION_LOADING:
             return
-        _legacy._CAPTION_LOADING = True
+        _shared._CAPTION_LOADING = True
 
     def _runner() -> None:
         try:
             _load_caption_backend(debug_write, blocking=True)
         finally:
-            with _legacy._CAPTION_LOCK:
-                _legacy._CAPTION_LOADING = False
+            with _shared._CAPTION_LOCK:
+                _shared._CAPTION_LOADING = False
 
     thread = threading.Thread(target=_runner, name="vision-caption-loader", daemon=True)
     thread.start()
@@ -82,20 +82,20 @@ def _ensure_caption_backend_loading(debug_write: _DEBUG_WRITE) -> None:
 
 
 def _load_caption_backend(debug_write: _DEBUG_WRITE, *, blocking: bool = False) -> tuple[object, object] | None:
-    if _legacy._CAPTION_BACKEND is not None:
-        return _legacy._CAPTION_BACKEND
-    if _legacy._CAPTION_LOAD_ATTEMPTED and _legacy._CAPTION_LOAD_ERROR:
+    if _shared._CAPTION_BACKEND is not None:
+        return _shared._CAPTION_BACKEND
+    if _shared._CAPTION_LOAD_ATTEMPTED and _shared._CAPTION_LOAD_ERROR:
         return None
     if not blocking:
         _ensure_caption_backend_loading(debug_write)
-        return _legacy._CAPTION_BACKEND
+        return _shared._CAPTION_BACKEND
 
-    with _legacy._CAPTION_LOCK:
-        if _legacy._CAPTION_BACKEND is not None:
-            return _legacy._CAPTION_BACKEND
-        if _legacy._CAPTION_LOAD_ATTEMPTED and _legacy._CAPTION_LOAD_ERROR:
+    with _shared._CAPTION_LOCK:
+        if _shared._CAPTION_BACKEND is not None:
+            return _shared._CAPTION_BACKEND
+        if _shared._CAPTION_LOAD_ATTEMPTED and _shared._CAPTION_LOAD_ERROR:
             return None
-        _legacy._CAPTION_LOAD_ATTEMPTED = True
+        _shared._CAPTION_LOAD_ATTEMPTED = True
 
     try:
         from transformers import BlipForConditionalGeneration, BlipProcessor
@@ -112,19 +112,19 @@ def _load_caption_backend(debug_write: _DEBUG_WRITE, *, blocking: bool = False) 
             processor = BlipProcessor.from_pretrained(model_id, local_files_only=local_only)
             model = BlipForConditionalGeneration.from_pretrained(model_id, local_files_only=local_only)
         model.eval()
-        with _legacy._CAPTION_LOCK:
-            _legacy._CAPTION_BACKEND = (processor, model)
-            _legacy._CAPTION_LOAD_ERROR = ""
+        with _shared._CAPTION_LOCK:
+            _shared._CAPTION_BACKEND = (processor, model)
+            _shared._CAPTION_LOAD_ERROR = ""
         debug_write(
             "vision_local_caption_ready",
             {"model_id": model_id, "local_only": local_only},
         )
     except Exception as exc:
-        with _legacy._CAPTION_LOCK:
-            _legacy._CAPTION_BACKEND = None
-            _legacy._CAPTION_LOAD_ERROR = str(exc)
+        with _shared._CAPTION_LOCK:
+            _shared._CAPTION_BACKEND = None
+            _shared._CAPTION_LOAD_ERROR = str(exc)
         debug_write("vision_local_caption_unavailable", {"error": str(exc)[:240]})
-    return _legacy._CAPTION_BACKEND
+    return _shared._CAPTION_BACKEND
 
 
 def _caption_image(image: Image.Image, debug_write: _DEBUG_WRITE, *, prompt: str = "") -> str:

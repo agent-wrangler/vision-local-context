@@ -4,7 +4,7 @@ import re
 
 from PIL import Image
 
-from . import _legacy
+from . import shared as _shared
 from .layout import (
     _analyze_chart_visual_pattern,
     _detect_visual_scene,
@@ -13,57 +13,14 @@ from .layout import (
     _structured_summary_labels,
 )
 
-_CHART_KEYWORDS = _legacy._CHART_KEYWORDS
-_BROWSER_KEYWORDS = _legacy._BROWSER_KEYWORDS
-_CHAT_KEYWORDS = _legacy._CHAT_KEYWORDS
-_SETTINGS_KEYWORDS = _legacy._SETTINGS_KEYWORDS
-_STOP_LABEL_WORDS = _legacy._STOP_LABEL_WORDS
-_normalize_text = _legacy._normalize_text
-_is_low_signal_ocr = _legacy._is_low_signal_ocr
-
-
-def _extract_readable_labels(text: str, *, limit: int = 6) -> list[str]:
-    normalized = _normalize_text(text, limit=1200)
-    if not normalized:
-        return []
-    labels: list[str] = []
-    seen: set[str] = set()
-    for raw in re.findall(r"[A-Za-z][A-Za-z0-9-]{2,}", normalized):
-        lowered = raw.lower()
-        if lowered in _STOP_LABEL_WORDS:
-            continue
-        if lowered in seen:
-            continue
-        seen.add(lowered)
-        labels.append(raw)
-        if len(labels) >= limit:
-            break
-    return labels
-
-
-def _extract_numeric_markers(text: str, *, limit: int = 8) -> list[str]:
-    normalized = _normalize_text(text, limit=1200)
-    if not normalized:
-        return []
-    markers: list[str] = []
-    seen: set[str] = set()
-    patterns = (
-        r"\bQ[1-4]\b",
-        r"[+-]?\d+(?:\.\d+)?\s*%",
-        r"\d+(?:\.\d+)?\s*[kKmMgG]\b",
-        r"\b\d{2,4}\b",
-    )
-    for pattern in patterns:
-        for raw in re.findall(pattern, normalized, flags=re.IGNORECASE):
-            marker = str(raw).strip()
-            key = marker.lower()
-            if not marker or key in seen:
-                continue
-            seen.add(key)
-            markers.append(marker)
-            if len(markers) >= limit:
-                return markers
-    return markers
+_BROWSER_KEYWORDS = _shared._BROWSER_KEYWORDS
+_CHART_KEYWORDS = _shared._CHART_KEYWORDS
+_CHAT_KEYWORDS = _shared._CHAT_KEYWORDS
+_SETTINGS_KEYWORDS = _shared._SETTINGS_KEYWORDS
+_extract_numeric_markers = _shared._extract_numeric_markers
+_extract_readable_labels = _shared._extract_readable_labels
+_is_low_signal_ocr = _shared._is_low_signal_ocr
+_normalize_text = _shared._normalize_text
 
 
 def _join_human_list(items: list[str]) -> str:

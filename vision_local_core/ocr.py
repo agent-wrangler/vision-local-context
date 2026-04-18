@@ -3,7 +3,10 @@ from __future__ import annotations
 import csv
 import io
 import json
-import re
+import os
+import shutil
+import subprocess
+import tempfile
 import time
 from collections import OrderedDict
 
@@ -11,16 +14,15 @@ from PIL import Image, ImageFilter, ImageOps
 
 from . import caption as _caption
 from . import layout as _layout
-from . import summary as _summary
-from ._legacy import (
+from .shared import (
     _DEBUG_WRITE,
     _RESAMPLING,
     _env_int,
+    _extract_readable_labels,
+    _is_low_signal_ocr,
     _normalize_text,
-    os,
-    shutil,
-    subprocess,
-    tempfile,
+    _ocr_line_text_quality,
+    _ocr_signal_score,
 )
 
 
@@ -41,28 +43,6 @@ def _tesseract_psm() -> int:
 
 def _tesseract_lang() -> str:
     return _normalize_text(os.environ.get("VISION_LOCAL_CONTEXT_TESSERACT_LANG", ""), limit=48).replace(" ", "")
-
-
-def _ocr_signal_score(text: str) -> int:
-    normalized = _normalize_text(text, limit=1600)
-    if not normalized:
-        return 0
-    latin_words = re.findall(r"[A-Za-z][A-Za-z0-9-]{2,}", normalized)
-    cjk_chars = re.findall(r"[\u4e00-\u9fff]", normalized)
-    digits = re.findall(r"\d", normalized)
-    return len(normalized) + len(latin_words) * 9 + len(cjk_chars) * 4 + len(digits) * 2
-
-
-def _is_low_signal_ocr(text: str) -> bool:
-    normalized = _normalize_text(text, limit=1600)
-    if not normalized:
-        return True
-    if len(re.findall(r"[\u4e00-\u9fff]", normalized)) >= 6:
-        return False
-    latin_words = re.findall(r"[A-Za-z][A-Za-z0-9-]{2,}", normalized)
-    if len(latin_words) >= 5 and len(normalized) >= 32:
-        return False
-    return _ocr_signal_score(normalized) < 72
 
 
 def _build_ocr_retry_image(image: Image.Image) -> Image.Image:
@@ -88,7 +68,7 @@ def _should_retry_ocr(image: Image.Image, text: str) -> bool:
         return False
     if len(normalized) >= 96:
         return False
-    return len(_summary._extract_readable_labels(normalized, limit=8)) < 6
+    return len(_extract_readable_labels(normalized, limit=8)) < 6
 
 
 def _empty_ocr_result(*, include_layout: bool) -> str | dict:
@@ -159,24 +139,6 @@ def _run_ocr_analysis(image: Image.Image, debug_write: _DEBUG_WRITE) -> dict:
         "backend": ocr_backend,
         "ms": round((time.perf_counter() - ocr_started_at) * 1000, 1),
     }
-
-
-def _ocr_line_text_quality(text: str) -> int:
-    normalized = _normalize_text(text, limit=240)
-    if not normalized:
-        return -1000
-    latin = len(re.findall(r"[A-Za-z]", normalized))
-    cjk = len(re.findall(r"[\u4e00-\u9fff]", normalized))
-    digits = len(re.findall(r"\d", normalized))
-    weird = len(re.findall(r"[^A-Za-z0-9\s:/._%+\-()\u4e00-\u9fff]", normalized))
-    score = len(normalized) + latin * 4 + cjk * 4 + digits * 2 - weird * 6
-    if _layout._looks_like_url_or_query(normalized):
-        score += 18
-    if latin + cjk <= 1 and digits <= 1:
-        score -= 20
-    return score
-
-
 def _parse_tesseract_tsv(payload: str) -> dict:
     reader = csv.DictReader(io.StringIO(str(payload or "")), delimiter="\t")
     line_map: OrderedDict[tuple[str, str, str, str], dict] = OrderedDict()

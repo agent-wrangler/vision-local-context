@@ -186,7 +186,8 @@ Near-term priorities:
 - `vision_local_core/summary.py`: summary generation and caption-prompt helpers
 - `vision_local_core/caption.py`: caption backend loading and inference helpers
 - `vision_local_core/pipeline.py`: high-level analysis and prompt-context assembly
-- `vision_local_core/_legacy.py`: staged compatibility layer while the refactor is still being moved inward
+- `vision_local_core/shared.py`: shared runtime state, keyword tables, and text-normalization helpers used across the active modules
+- `vision_local_core/_legacy.py`: shrinking compatibility layer kept for staged refactor safety and top-level patch compatibility
 - `tests/test_vision_local_context.py`: regression tests for OCR cleanup, layout inference, and chart heuristics
 - `.github/workflows/ci.yml`: test and packaging checks for pushes and pull requests
 - `CHANGELOG.md`: release notes

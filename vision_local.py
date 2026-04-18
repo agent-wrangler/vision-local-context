@@ -1,29 +1,33 @@
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
+import tempfile
+
 from vision_local_core import (
     _legacy,
     caption as _caption,
     layout as _layout,
     ocr as _ocr,
     pipeline as _pipeline,
+    shared as _shared,
     summary as _summary,
 )
 from vision_local_core.caption import *
 from vision_local_core.layout import *
 from vision_local_core.ocr import *
 from vision_local_core.pipeline import *
-from vision_local_core.summary import *
-from vision_local_core._legacy import (
-    __all__ as _PUBLIC_API,
+from vision_local_core.shared import (
     _CAPTION_BACKEND,
     _CAPTION_LOAD_ATTEMPTED,
     _CAPTION_LOAD_ERROR,
     _CAPTION_LOADING,
     _DEBUG_WRITE,
-    os,
-    shutil,
-    subprocess,
-    tempfile,
+)
+from vision_local_core.summary import *
+from vision_local_core._legacy import (
+    __all__ as _PUBLIC_API,
 )
 
 __all__ = list(_PUBLIC_API)
@@ -40,11 +44,12 @@ _SYNC_EXCLUDED = {
     "_legacy",
     "_ocr",
     "_pipeline",
+    "_shared",
     "_summary",
     "_sync_legacy_globals",
 }
 
-_SYNC_TARGETS = (_legacy, _caption, _layout, _ocr, _pipeline, _summary)
+_SYNC_TARGETS = (_legacy, _caption, _layout, _ocr, _pipeline, _shared, _summary)
 
 
 def _sync_legacy_globals(*, include_analyze: bool = False) -> None:

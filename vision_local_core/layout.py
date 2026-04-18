@@ -5,40 +5,28 @@ import re
 
 from PIL import Image
 
-from . import _legacy
+from . import shared as _shared
 
-_BROWSER_FIELD_TOKENS = _legacy._BROWSER_FIELD_TOKENS
-_BROWSER_KEYWORDS = _legacy._BROWSER_KEYWORDS
-_BROWSER_TITLE_EXCLUDE_TOKENS = _legacy._BROWSER_TITLE_EXCLUDE_TOKENS
-_CHAT_INPUT_TOKENS = _legacy._CHAT_INPUT_TOKENS
-_CHAT_KEYWORDS = _legacy._CHAT_KEYWORDS
-_CHART_KEYWORDS = _legacy._CHART_KEYWORDS
-_COMMON_UI_CANONICALS = _legacy._COMMON_UI_CANONICALS
-_RESAMPLING = _legacy._RESAMPLING
-_SETTINGS_KEYWORDS = _legacy._SETTINGS_KEYWORDS
-_extract_numeric_markers = _legacy._extract_numeric_markers
-_extract_readable_labels = _legacy._extract_readable_labels
-_normalize_text = _legacy._normalize_text
-_ocr_line_text_quality = _legacy._ocr_line_text_quality
+_BROWSER_FIELD_TOKENS = _shared._BROWSER_FIELD_TOKENS
+_BROWSER_KEYWORDS = _shared._BROWSER_KEYWORDS
+_BROWSER_TITLE_EXCLUDE_TOKENS = _shared._BROWSER_TITLE_EXCLUDE_TOKENS
+_CHAT_INPUT_TOKENS = _shared._CHAT_INPUT_TOKENS
+_CHAT_KEYWORDS = _shared._CHAT_KEYWORDS
+_CHART_KEYWORDS = _shared._CHART_KEYWORDS
+_COMMON_UI_CANONICALS = _shared._COMMON_UI_CANONICALS
+_RESAMPLING = _shared._RESAMPLING
+_SETTINGS_KEYWORDS = _shared._SETTINGS_KEYWORDS
+_extract_numeric_markers = _shared._extract_numeric_markers
+_extract_readable_labels = _shared._extract_readable_labels
+_looks_like_url_or_query = _shared._looks_like_url_or_query
+_normalize_text = _shared._normalize_text
+_ocr_line_text_quality = _shared._ocr_line_text_quality
 
 
 def _count_keyword_hits(text: str, keywords: set[str]) -> tuple[int, set[str]]:
     lowered = _normalize_text(text, limit=1600).lower()
     hits = {keyword for keyword in keywords if keyword in lowered}
     return len(hits), hits
-
-
-def _looks_like_url_or_query(text: str) -> bool:
-    lowered = _normalize_text(text, limit=240).lower()
-    if not lowered:
-        return False
-    if any(token in lowered for token in ("http", "www.", ".com", ".cn", ".net", ".io", ".ai", "://")):
-        return True
-    if "/" in lowered and "." in lowered:
-        return True
-    if "\\" in lowered and "." in lowered:
-        return True
-    return lowered.count(".") >= 2 and " " not in lowered
 
 
 def _stabilize_layout_text(text: str) -> str:

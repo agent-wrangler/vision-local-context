@@ -3,6 +3,7 @@
 ## Unreleased
 
 - split the project into internal `ocr`, `layout`, `summary`, `caption`, and `pipeline` modules behind a top-level compatibility facade
+- introduced `vision_local_core/shared.py` for shared runtime state, keyword tables, and cross-module text helpers so the active modules rely less on `_legacy.py`
 - moved the high-level analysis pipeline and prompt-context builders into `vision_local_core/pipeline.py`
 - moved layout parsing, scene detection, and chart heuristics into `vision_local_core/layout.py`
 - moved summary generation and caption-decision helpers into `vision_local_core/summary.py`
